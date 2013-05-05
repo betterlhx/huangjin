@@ -1,14 +1,31 @@
 # change log
 # 2013-5-5: 初始化本地文件，开始扫描时，将网页内容写入到本地文件，以免发送很多无用短信
+# 2013-5-5: 自动初始化中金浏览器。并增加浏览器初始化检查机制。 TODO:由于飞信有时需要输入验证码，没法做到完全初始化，以后优化吧。
 require "watir"
 require 'yaml'
 
-## feixin global variable
+## 初始化飞信浏览器，并检查是否初始化成功
 $feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/);
 $feinxin_frame = $feixin_browser.frame(:src,"content/freeSms.htm?tabIndex=0");
+if ($feinxin_frame.nil? || $feinxin_frame.nil?) ## 检查策略
+  return;
+end
 
-## cnfol global variable
-$cnfolBrowser = Watir::Browser.attach(:url,"http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817");
+## 初始化cnfol浏览器，并检查是否初始化成功
+begin
+  $cnfolBrowser = Watir::Browser.attach(:url,"http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817");
+rescue Exception
+  $cnfolBrowser = Watir::Browser.new;
+  $cnfolBrowser.goto("http://passport.cnfol.com/accounts/Logout");
+  $cnfolBrowser.text_field(:id=>"username").set("betterlhx");
+  $cnfolBrowser.text_field(:id=>"password").set("hello1234");
+  $cnfolBrowser.a(:id=>"login").click;
+  $cnfolBrowser.goto("http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817");
+end
+if($cnfolBrowser.url != "http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817") ## 检查策略
+  return;
+end
+
 
 # other
 $sleep_time = 5; ## sleep time
