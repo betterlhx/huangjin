@@ -1,5 +1,5 @@
-# To change this template, choose Tools | Templates
-# and open the template in the editor.
+# change log
+# 2013-5-5: 初始化本地文件，开始扫描时，将网页内容写入到本地文件，以免发送很多无用短信
 require "watir"
 require 'yaml'
 
@@ -63,6 +63,16 @@ def read_file(file_name=$file_name)
   return db_live_content;
 end
 
+# 初始化本地备份的内容
+def init()
+  live_content = get_live_content(); ## 获取网页的直播内容
+  # 将直播内容存储到文件中
+  write_file(live_content); # 存储文件
+  send_sms("init completed, start scan...");
+end
+
+init(); # 初始化本地备份的内容
+
 # 无限循环
 while true do
   begin
@@ -71,10 +81,10 @@ while true do
 
     ## 对比live_content和db_live_content
     ## 遍历live_content，判断key是否存在于db_live_content
-    smsContent=""; ## 记录这次扫描短信的所有内容
+    sms_content=""; ## 记录这次扫描短信的所有内容
     live_content.each do |k,v|
       unless(db_live_content.has_key?(k))  # unless和if相反
-        smsContent = smsContent+ ">>" + k + " " +v;
+        sms_content = sms_content+ ">>" + k + " " +v;
         send_sms(k + " " +v); ## 发送飞信
       end
     end
@@ -85,7 +95,7 @@ while true do
     end
 
     ## 写入日志
-    log = "time: "+Time.now.to_s + " SMS content: "+smsContent;
+    log = "time: "+Time.now.to_s + " SMS content: "+sms_content;
     write_log(log);
     puts log;
 
