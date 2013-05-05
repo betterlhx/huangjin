@@ -29,7 +29,7 @@ end
 
 # other
 $sleep_time = 5; ## sleep time
-$file_name = "huangjin.yaml";
+$file_name = "livemsg.yaml";
 $log_file = "log_file.txt";
 
 # ∑¢ÀÕ∂Ã–≈œ¢
