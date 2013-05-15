@@ -2,6 +2,7 @@
 # 2013-5-5: 初始化本地文件，开始扫描时，将网页内容写入到本地文件，以免发送很多无用短信
 # 2013-5-5: 自动初始化中金浏览器。并增加浏览器初始化检查机制。 TODO:由于飞信有时需要输入验证码，没法做到完全初始化，以后优化吧。
 # 2013-5-15: 自动初始化飞信浏览器。并增加浏览器初始化检查机制。 局部优化，防止Exception的抛出。保证最大程度的自动化
+# 2013-5-15: 在开始执行前，关闭所有ie浏览器
 require "watir"
 require 'yaml'
 
@@ -10,6 +11,7 @@ $sleep_time = 5; ## 暂停几秒的设置
 $file_name = "livemsg.yaml";  ## 本地存储
 $log_file = "log_file.txt";   ## 日志文件
 
+system('taskkill /f /im iexplore.exe') ## 关闭所有ie浏览器，重新初始化
 ######### begin  初始化飞信浏览器，并检查是否初始化成功   #############
 begin
   $feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/); ## 首先寻找飞信浏览器，如果找不到，则初始化
