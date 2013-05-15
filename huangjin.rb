@@ -3,6 +3,7 @@
 # 2013-5-5: 自动初始化中金浏览器。并增加浏览器初始化检查机制。 TODO:由于飞信有时需要输入验证码，没法做到完全初始化，以后优化吧。
 # 2013-5-15: 自动初始化飞信浏览器。并增加浏览器初始化检查机制。 局部优化，防止Exception的抛出。保证最大程度的自动化
 # 2013-5-15: 在开始执行前，关闭所有ie浏览器
+# 2013-5-15: 注释掉“关闭所有浏览器”的命令；为了防止飞信输入验证码，attach飞信浏览器时，写全了url，可以手工输入验证码，然后接着开始。
 require "watir"
 require 'yaml'
 
@@ -11,10 +12,10 @@ $sleep_time = 5; ## 暂停几秒的设置
 $file_name = "livemsg.yaml";  ## 本地存储
 $log_file = "log_file.txt";   ## 日志文件
 
-system('taskkill /f /im iexplore.exe') ## 关闭所有ie浏览器，重新初始化
+#system('taskkill /f /im iexplore.exe') ## 关闭所有ie浏览器，重新初始化
 ######### begin  初始化飞信浏览器，并检查是否初始化成功   #############
 begin
-  $feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/); ## 首先寻找飞信浏览器，如果找不到，则初始化
+  $feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn\/main.aspx/); ## 首先寻找飞信浏览器，如果找不到，则初始化
 rescue Exception
   $feixin_browser= Watir::Browser.new;
   $feixin_browser.goto("https://webim.feixin.10086.cn/login.aspx");
@@ -25,7 +26,12 @@ rescue Exception
   $feinxin_login_frame.a(:class=>"ln_btn_login").click;
   sleep $sleep_time; ## 暂停几秒，等飞信浏览器完全初始化成功
 end
-$feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/); ## 再次获得飞信浏览器的焦点
+begin
+$feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn\/main.aspx/); ## 再次获得飞信浏览器的焦点
+rescue Exception  ## 找不到飞信浏览器，得手工输入了。
+  puts "not find feixin:  https://webim.feixin.10086.cn/login.aspx";
+  return;
+end
 if ($feixin_browser.nil?) ## 检查策略
   return;
 end
