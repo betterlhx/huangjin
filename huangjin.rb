@@ -1,17 +1,40 @@
 # change log
 # 2013-5-5: 初始化本地文件，开始扫描时，将网页内容写入到本地文件，以免发送很多无用短信
 # 2013-5-5: 自动初始化中金浏览器。并增加浏览器初始化检查机制。 TODO:由于飞信有时需要输入验证码，没法做到完全初始化，以后优化吧。
+# 2013-5-15: 自动初始化飞信浏览器。并增加浏览器初始化检查机制。 局部优化，防止Exception的抛出。保证最大程度的自动化
 require "watir"
 require 'yaml'
 
-## 初始化飞信浏览器，并检查是否初始化成功
-$feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/);
-$feinxin_frame = $feixin_browser.frame(:src,"content/freeSms.htm?tabIndex=0");
-if ($feinxin_frame.nil? || $feinxin_frame.nil?) ## 检查策略
+# 常量定义
+$sleep_time = 5; ## 暂停几秒的设置
+$file_name = "livemsg.yaml";  ## 本地存储
+$log_file = "log_file.txt";   ## 日志文件
+
+######### begin  初始化飞信浏览器，并检查是否初始化成功   #############
+begin
+  $feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/); ## 首先寻找飞信浏览器，如果找不到，则初始化
+rescue Exception
+  $feixin_browser= Watir::Browser.new;
+  $feixin_browser.goto("https://webim.feixin.10086.cn/login.aspx");
+  sleep $sleep_time; ## 停止2s
+  $feinxin_login_frame = $feixin_browser.frame(:src,"https://webim.feixin.10086.cn/loginform.aspx");
+  $feinxin_login_frame.text_field(:id=>"login_username").set("15158133460");
+  $feinxin_login_frame.text_field(:id=>"login_pass").set("ab8891491");
+  $feinxin_login_frame.a(:class=>"ln_btn_login").click;
+  sleep $sleep_time; ## 暂停几秒，等飞信浏览器完全初始化成功
+end
+$feixin_browser = Watir::Browser.attach(:url,/webim.feixin.10086.cn/); ## 再次获得飞信浏览器的焦点
+if ($feixin_browser.nil?) ## 检查策略
   return;
 end
+## 得到飞信的iframe
+$feinxin_frame = $feixin_browser.frame(:src,"content/freeSms.htm?tabIndex=0");
+if ($feinxin_frame.nil?) ## 检查策略
+  return;
+end
+######## end 飞信浏览器初始化完毕 ########################
 
-## 初始化cnfol浏览器，并检查是否初始化成功
+######## begin 初始化cnfol浏览器，并检查是否初始化成功 ##########
 begin
   $cnfolBrowser = Watir::Browser.attach(:url,"http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817");
 rescue Exception
@@ -22,15 +45,11 @@ rescue Exception
   $cnfolBrowser.a(:id=>"login").click;
   $cnfolBrowser.goto("http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817");
 end
+sleep $sleep_time; ## 稍微停顿几秒，等待内容的加载
 if($cnfolBrowser.url != "http://cs.cnfol.com/gold/userTolivemsg.html?expertId=5607817") ## 检查策略
   return;
 end
-
-
-# other
-$sleep_time = 5; ## sleep time
-$file_name = "livemsg.yaml";
-$log_file = "log_file.txt";
+######## end 初始化cnfol浏览器，并检查是否初始化成功 ##########
 
 # 发送短信息
 def send_sms(message="")
@@ -39,7 +58,7 @@ def send_sms(message="")
   $feinxin_frame.text_field(:id,"smsContent").set message;
   $feinxin_frame.link(:id,"submitBtn").click;
 
-  sleep $sleep_time; ## 停止2s
+  sleep $sleep_time; ## 停止几秒
 end
 
 # 获取直播内容
@@ -80,14 +99,22 @@ def read_file(file_name=$file_name)
   return db_live_content;
 end
 
+
+
 # 初始化本地备份的内容
 def init()
+  begin
   live_content = get_live_content(); ## 获取网页的直播内容
+  rescue Exception => e
+    write_log("Exception" + e.to_s);
+    puts "Exception" + e.to_s;
+  end
   # 将直播内容存储到文件中
   write_file(live_content); # 存储文件
   send_sms("init completed, start scan...");
 end
 
+####### 初始化动作，将当前的直播内容写入日志文件 ####
 init(); # 初始化本地备份的内容
 
 # 无限循环
@@ -122,4 +149,3 @@ while true do
     puts "Exception" + e.to_s;
   end
 end
-
